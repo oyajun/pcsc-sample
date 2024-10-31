@@ -17,7 +17,7 @@ const IDM_LENGTH: usize = 8;
 pub struct ReaderSession {
     ctx: Context,
     reader_name: CString,
-    recv_buf: [u8; MAX_BUFFER_SIZE],    // ここにIFD Handlerから返却されたバイト列が入る
+    pub recv_buf: [u8; MAX_BUFFER_SIZE], // ここにIFD Handlerから返却されたバイト列が入る
     escape_code: Option<DWORD>,
     direct_reader: Card,
     is_transparent_mode: bool,
@@ -166,6 +166,48 @@ impl ReaderSession {
         } else {
             warn!("No response data object in IFC response.");
             Ok(None)
+        }
+    }
+
+    pub fn nfc_f_read_without_encryption(&mut self) -> Result<bool> {
+        self.recv_buf = [0; MAX_BUFFER_SIZE];
+        if let Some(code) = self.escape_code {
+            let mut apdu_buf: [u8; 25] = [0; 25];
+            // NFC-F read_without_encryption コマンドを発行するTransparent Exchange: Transceive Command APDUを構築する
+            apdu::nfc_f::read_without_encryption(&mut apdu_buf, &self.idm);
+            // Command APDU送信
+            self.direct_reader
+                .control(code, &apdu_buf, &mut self.recv_buf)?;
+        } else {
+            bail!("CCID escape code is not available.");
+        }
+        let resp_parser = TLVParser::parse_slice(&self.recv_buf)?;
+        // まず tag == 0xC1 のTLVを探してエラー状態を確認
+        if let Some(error) = parser::get_response_apdu_error(&resp_parser) {
+            Ok(match error {
+                ResponseApduError::Ok => {
+                    // 通信成功したのでNFC-Fタグから応答があったと仮定
+                    info!("Found a NFC-F card.");
+                    // Responseデータオブジェクトをパース
+                    if let Some(idm) = self.acquire_idm(&resp_parser)? {
+                        self.idm.copy_from_slice(&idm);
+                        true
+                    } else {
+                        false
+                    }
+                }
+                // とりあえずタグから反応しなかった場合だけフック（正直サボってます）
+                ResponseApduError::ICCNotResponding => {
+                    info!("No response from ICC.");
+                    false
+                }
+                _ => {
+                    warn!("Unexpected response error: {:?}", error);
+                    false
+                }
+            })
+        } else {
+            Ok(false)
         }
     }
 

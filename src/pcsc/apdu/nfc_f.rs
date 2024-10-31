@@ -1,3 +1,5 @@
+use crate::pcsc::IDM_LENGTH;
+
 pub const SYSTEM_ALL: u16 = 0xFFFF;
 
 // 追加で要求するデータ
@@ -55,4 +57,50 @@ pub fn polling(
     apdu_buf[10] = system_code_encoded[1];
     apdu_buf[11] = request_code.encode();
     apdu_buf[12] = time_slot.encode();
+    println!("送信するAPDUコマンド:");
+    print16(apdu_buf);
+}
+
+pub fn read_without_encryption(apdu_buf: &mut [u8; 25], idm: &[u8; IDM_LENGTH]) {
+    // APDU構築
+    apdu_buf[..5].copy_from_slice(&[0xFF, 0xC2, 0x00, 0x01, 0x14]);
+
+    // Transceive Data Object
+    apdu_buf[5] = 0x95;
+    apdu_buf[6] = 0x11;
+    apdu_buf[7] = 0x11;
+
+    // コマンドコード
+    apdu_buf[8] = 0x06;
+
+    // IDm
+    apdu_buf[9..17].copy_from_slice(idm);
+
+    // サービス数 1つで固定
+    apdu_buf[17] = 0x01;
+
+    // サービスコードリスト
+    apdu_buf[18] = 0x0b;
+    apdu_buf[19] = 0x00;
+
+    // ブロック数 2つ
+    apdu_buf[20] = 0x02;
+
+    // ブロックリスト
+    // 1つめのブロック
+    apdu_buf[21] = 0x80;
+    apdu_buf[22] = 0x05;
+    // 2つめのブロック
+    apdu_buf[23] = 0x80;
+    apdu_buf[24] = 0x91;
+
+    println!("送信するAPDUコマンド:");
+    print16(apdu_buf);
+}
+
+fn print16(data: &[u8]) {
+    for i in data {
+        print!("{:02X} ", i);
+    }
+    println!();
 }
