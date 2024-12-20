@@ -189,12 +189,13 @@ impl ReaderSession {
                     // 通信成功したのでNFC-Fタグから応答があったと仮定
                     info!("Found a NFC-F card.");
                     // Responseデータオブジェクトをパース
-                    if let Some(idm) = self.acquire_idm(&resp_parser)? {
-                        self.idm.copy_from_slice(&idm);
-                        true
-                    } else {
-                        false
-                    }
+                    // if let Some(idm) = self.acquire_idm(&resp_parser)? {
+                    //     self.idm.copy_from_slice(&idm);
+                    //     true
+                    // } else {
+                    //     false
+                    // }
+                    true
                 }
                 // とりあえずタグから反応しなかった場合だけフック（正直サボってます）
                 ResponseApduError::ICCNotResponding => {

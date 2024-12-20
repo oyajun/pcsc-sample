@@ -67,8 +67,8 @@ pub fn read_without_encryption(apdu_buf: &mut [u8; 25], idm: &[u8; IDM_LENGTH]) 
 
     // Transceive Data Object
     apdu_buf[5] = 0x95;
-    apdu_buf[6] = 0x11;
-    apdu_buf[7] = 0x11;
+    apdu_buf[6] = 0x12; //データサイズ
+    apdu_buf[7] = 0x12; // 上と同じ
 
     // コマンドコード
     apdu_buf[8] = 0x06;
@@ -87,12 +87,12 @@ pub fn read_without_encryption(apdu_buf: &mut [u8; 25], idm: &[u8; IDM_LENGTH]) 
     apdu_buf[20] = 0x02;
 
     // ブロックリスト
-    // 1つめのブロック
+    // 1つめのブロック スクラッチパッド5
     apdu_buf[21] = 0x80;
     apdu_buf[22] = 0x05;
-    // 2つめのブロック
+    // 2つめのブロック スクラッチパッド6
     apdu_buf[23] = 0x80;
-    apdu_buf[24] = 0x91;
+    apdu_buf[24] = 0x06;
 
     println!("送信するAPDUコマンド:");
     print16(apdu_buf);
