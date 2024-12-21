@@ -212,6 +212,49 @@ impl ReaderSession {
         }
     }
 
+    pub fn nfc_f_write_without_encryption(&mut self) -> Result<bool> {
+        self.recv_buf = [0; MAX_BUFFER_SIZE];
+        if let Some(code) = self.escape_code {
+            let mut apdu_buf: [u8; 39] = [0; 39];
+            // NFC-F write_without_encryption コマンドを発行するTransparent Exchange: Transceive Command APDUを構築する
+            apdu::nfc_f::write_without_encryption(&mut apdu_buf, &self.idm);
+            // Command APDU送信
+            self.direct_reader
+                .control(code, &apdu_buf, &mut self.recv_buf)?;
+        } else {
+            bail!("CCID escape code is not available.");
+        }
+        let resp_parser = TLVParser::parse_slice(&self.recv_buf)?;
+        // まず tag == 0xC1 のTLVを探してエラー状態を確認
+        if let Some(error) = parser::get_response_apdu_error(&resp_parser) {
+            Ok(match error {
+                ResponseApduError::Ok => {
+                    // 通信成功したのでNFC-Fタグから応答があったと仮定
+                    info!("Found a NFC-F card.");
+                    // Responseデータオブジェクトをパース
+                    // if let Some(idm) = self.acquire_idm(&resp_parser)? {
+                    //     self.idm.copy_from_slice(&idm);
+                    //     true
+                    // } else {
+                    //     false
+                    // }
+                    true
+                }
+                // とりあえずタグから反応しなかった場合だけフック（正直サボってます）
+                ResponseApduError::ICCNotResponding => {
+                    info!("No response from ICC.");
+                    false
+                }
+                _ => {
+                    warn!("Unexpected response error: {:?}", error);
+                    false
+                }
+            })
+        } else {
+            Ok(false)
+        }
+    }
+
     // PCSC liteに認識されているカードリーダーを名前で検索して、実際の名前（数値がついている状態の名前）を引いてくる
     fn find_reader(ctx: &Context, reader_name: &str) -> Result<CString> {
         let reader_names = ctx.list_readers_owned()?;

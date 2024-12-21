@@ -98,6 +98,58 @@ pub fn read_without_encryption(apdu_buf: &mut [u8; 25], idm: &[u8; IDM_LENGTH]) 
     print16(apdu_buf);
 }
 
+pub fn write_without_encryption(apdu_buf: &mut [u8; 39], idm: &[u8; IDM_LENGTH]) {
+    // APDU構築
+    apdu_buf[..5].copy_from_slice(&[0xFF, 0xC2, 0x00, 0x01, 34]);
+
+    // Transceive Data Object
+    apdu_buf[5] = 0x95;
+    apdu_buf[6] = 32; //データサイズ
+    apdu_buf[7] = 32; // 上と同じ //1
+
+    // コマンドコード
+    apdu_buf[8] = 0x08; //2
+
+    // IDm
+    apdu_buf[9..17].copy_from_slice(idm); //10
+
+    // サービス数 1つで固定
+    apdu_buf[17] = 0x01; //11
+
+    // サービスコードリスト Write & Read
+    apdu_buf[18] = 0x09; //12
+    apdu_buf[19] = 0x00; //13
+
+    // ブロック数 1つ
+    apdu_buf[20] = 0x01; //14
+
+    // ブロックリスト
+    // 1つめのブロック スクラッチパッド5
+    apdu_buf[21] = 0x80; //15
+    apdu_buf[22] = 0x05; //16
+
+    // ブロックデータ 16ビット
+    apdu_buf[23] = 0x01; //17
+    apdu_buf[24] = 0x01;
+    apdu_buf[25] = 0x01;
+    apdu_buf[26] = 0x01;
+    apdu_buf[27] = 0x01;
+    apdu_buf[28] = 0x01;
+    apdu_buf[29] = 0x01;
+    apdu_buf[30] = 0x01;
+    apdu_buf[31] = 0x01;
+    apdu_buf[32] = 0x01;
+    apdu_buf[33] = 0x01;
+    apdu_buf[34] = 0x01;
+    apdu_buf[35] = 0x01;
+    apdu_buf[36] = 0x01;
+    apdu_buf[37] = 0x01;
+    apdu_buf[38] = 0x01; //32
+
+    println!("送信するAPDUコマンド:");
+    print16(apdu_buf);
+}
+
 fn print16(data: &[u8]) {
     for i in data {
         print!("{:02X} ", i);

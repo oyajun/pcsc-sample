@@ -44,11 +44,15 @@ async fn app_main() -> Result<()> {
             print16(&reader_session.idm);
             if (reader_session.idm != [0; 8]) {
                 println!("Polling成功 ");
-                for i in 0..20 {
+                for i in 0..5 {
                     sleep(Duration::from_millis(1000u64)).await;
+                    println!("読み込み開始");
                     reader_session.nfc_f_read_without_encryption()?;
-                    //sleep(Duration::from_millis(1000u64)).await;
-                    println!("読み込みデータ:");
+                    println!("受信データ:");
+                    print16(&reader_session.recv_buf);
+                    println!("書き込み開始");
+                    reader_session.nfc_f_write_without_encryption()?;
+                    println!("受信データ:");
                     print16(&reader_session.recv_buf);
                 }
                 return Ok(());
