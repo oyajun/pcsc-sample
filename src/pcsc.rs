@@ -169,12 +169,12 @@ impl ReaderSession {
         }
     }
 
-    pub fn nfc_f_read_without_encryption(&mut self) -> Result<bool> {
+    pub fn nfc_f_read_without_encryption(&mut self, block1: u8, block2: u8) -> Result<bool> {
         self.recv_buf = [0; MAX_BUFFER_SIZE];
         if let Some(code) = self.escape_code {
             let mut apdu_buf: [u8; 25] = [0; 25];
             // NFC-F read_without_encryption コマンドを発行するTransparent Exchange: Transceive Command APDUを構築する
-            apdu::nfc_f::read_without_encryption(&mut apdu_buf, &self.idm);
+            apdu::nfc_f::read_without_encryption(&mut apdu_buf, &self.idm, block1, block2);
             // Command APDU送信
             self.direct_reader
                 .control(code, &apdu_buf, &mut self.recv_buf)?;

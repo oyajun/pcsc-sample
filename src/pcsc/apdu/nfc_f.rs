@@ -61,7 +61,12 @@ pub fn polling(
     print16(apdu_buf);
 }
 
-pub fn read_without_encryption(apdu_buf: &mut [u8; 25], idm: &[u8; IDM_LENGTH]) {
+pub fn read_without_encryption(
+    apdu_buf: &mut [u8; 25],
+    idm: &[u8; IDM_LENGTH],
+    block1: u8,
+    block2: u8,
+) {
     // APDU構築
     apdu_buf[..5].copy_from_slice(&[0xFF, 0xC2, 0x00, 0x01, 0x14]);
 
@@ -89,10 +94,10 @@ pub fn read_without_encryption(apdu_buf: &mut [u8; 25], idm: &[u8; IDM_LENGTH]) 
     // ブロックリスト
     // 1つめのブロック スクラッチパッド5
     apdu_buf[21] = 0x80;
-    apdu_buf[22] = 0x05;
+    apdu_buf[22] = block1;
     // 2つめのブロック スクラッチパッド6
     apdu_buf[23] = 0x80;
-    apdu_buf[24] = 0x06;
+    apdu_buf[24] = block2;
 
     println!("送信するAPDUコマンド:");
     print16(apdu_buf);
