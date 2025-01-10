@@ -103,7 +103,12 @@ pub fn read_without_encryption(
     print16(apdu_buf);
 }
 
-pub fn write_without_encryption(apdu_buf: &mut [u8; 39], idm: &[u8; IDM_LENGTH]) {
+pub fn write_without_encryption(
+    apdu_buf: &mut [u8; 39],
+    idm: &[u8; IDM_LENGTH],
+    block: u8,
+    data: &[u8; 16],
+) {
     // APDU構築
     apdu_buf[..5].copy_from_slice(&[0xFF, 0xC2, 0x00, 0x01, 34]);
 
@@ -131,25 +136,10 @@ pub fn write_without_encryption(apdu_buf: &mut [u8; 39], idm: &[u8; IDM_LENGTH])
     // ブロックリスト
     // 1つめのブロック スクラッチパッド5
     apdu_buf[21] = 0x80; //15
-    apdu_buf[22] = 0x05; //16
+    apdu_buf[22] = block; //16
 
     // ブロックデータ 16ビット
-    apdu_buf[23] = 0x01; //17
-    apdu_buf[24] = 0x01;
-    apdu_buf[25] = 0x01;
-    apdu_buf[26] = 0x01;
-    apdu_buf[27] = 0x01;
-    apdu_buf[28] = 0x01;
-    apdu_buf[29] = 0x01;
-    apdu_buf[30] = 0x01;
-    apdu_buf[31] = 0x01;
-    apdu_buf[32] = 0x01;
-    apdu_buf[33] = 0x01;
-    apdu_buf[34] = 0x01;
-    apdu_buf[35] = 0x01;
-    apdu_buf[36] = 0x01;
-    apdu_buf[37] = 0x01;
-    apdu_buf[38] = 0x01; //32
+    apdu_buf[23..39].copy_from_slice(data); //10
 
     println!("送信するAPDUコマンド:");
     print16(apdu_buf);

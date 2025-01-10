@@ -51,7 +51,8 @@ async fn app_main() -> Result<()> {
                     println!("受信データ:");
                     print16(&reader_session.recv_buf);
                     println!("書き込み開始");
-                    reader_session.nfc_f_write_without_encryption()?;
+                    let data = [0xBB; 16];
+                    reader_session.nfc_f_write_without_encryption(5, &data)?;
                     println!("受信データ:");
                     print16(&reader_session.recv_buf);
                 }
