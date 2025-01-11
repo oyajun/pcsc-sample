@@ -47,12 +47,13 @@ async fn app_main() -> Result<()> {
                 for i in 0..5 {
                     sleep(Duration::from_millis(1000u64)).await;
                     println!("読み込み開始");
-                    reader_session.nfc_f_read_without_encryption(5, 6)?;
+                    let (data1, data2) = reader_session.nfc_f_read_without_encryption(5, 6)?;
                     println!("受信データ:");
-                    print16(&reader_session.recv_buf);
+                    print16(&data1);
+                    print16(&data2);
                     println!("書き込み開始");
-                    let data = [0xBB; 16];
-                    reader_session.nfc_f_write_without_encryption(5, &data)?;
+                    let data = [0xBA; 16];
+                    reader_session.nfc_f_write_without_encryption(6, &data)?;
                     println!("受信データ:");
                     print16(&reader_session.recv_buf);
                 }
