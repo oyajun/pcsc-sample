@@ -231,7 +231,20 @@ impl ReaderSession {
         }
     }
 
-    pub fn nfc_f_write_without_encryption(&mut self, block: u8, data: &[u8; 16]) -> Result<bool> {
+    fn check_write_data(&self, parser: &TLVParser) -> Result<()> {
+        // Responseデータオブジェクトだけ抜き出す
+        if let Some(data) = parser::get_response_data(parser) {
+            println!("data: {:?}", data);
+            // Writeレスポンスフレームをパースして正しく書き込めたかチェック
+            parser::nfc_f::WriteResponse::parse_from_data(&data)?;
+            Ok(())
+        } else {
+            warn!("No response data object in IFC response.");
+            Err(anyhow!("No response data object in IFC response."))
+        }
+    }
+
+    pub fn nfc_f_write_without_encryption(&mut self, block: u8, data: &[u8; 16]) -> Result<()> {
         self.recv_buf = [0; MAX_BUFFER_SIZE];
         if let Some(code) = self.escape_code {
             let mut apdu_buf: [u8; 39] = [0; 39];
@@ -246,31 +259,26 @@ impl ReaderSession {
         let resp_parser = TLVParser::parse_slice(&self.recv_buf)?;
         // まず tag == 0xC1 のTLVを探してエラー状態を確認
         if let Some(error) = parser::get_response_apdu_error(&resp_parser) {
-            Ok(match error {
+            match error {
                 ResponseApduError::Ok => {
                     // 通信成功したのでNFC-Fタグから応答があったと仮定
                     info!("Found a NFC-F card.");
-                    // Responseデータオブジェクトをパース
-                    // if let Some(idm) = self.acquire_idm(&resp_parser)? {
-                    //     self.idm.copy_from_slice(&idm);
-                    //     true
-                    // } else {
-                    //     false
-                    // }
-                    true
+                    //Responseデータオブジェクトをパース
+                    self.check_write_data(&resp_parser)?;
+                    Ok(())
                 }
-                // とりあえずタグから反応しなかった場合だけフック（正直サボってます）
+                // とりあえずタグから反応しなかった場合だけフック
                 ResponseApduError::ICCNotResponding => {
                     info!("No response from ICC.");
-                    false
+                    Err(anyhow!("No response from ICC."))
                 }
                 _ => {
                     warn!("Unexpected response error: {:?}", error);
-                    false
+                    Err(anyhow!("Unexpected response error"))
                 }
-            })
+            }
         } else {
-            Ok(false)
+            Err(anyhow!("Failed to parse apdu response."))
         }
     }
 

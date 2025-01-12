@@ -74,3 +74,30 @@ impl<'data> ReadResponse<'data> {
         Ok((input, Self { data1, data2 }))
     }
 }
+
+pub struct WriteResponse<'data> {
+    pub(crate) idm: &'data [u8],
+}
+
+impl<'data> WriteResponse<'data> {
+    pub fn parse_from_data(data: &'data [u8]) -> Result<Self> {
+        if let Ok((_, resp)) = Self::parse_write_response(data) {
+            Ok(resp)
+        } else {
+            bail!("Could not parse the Read response.");
+        }
+    }
+
+    fn parse_write_response(data: &'data [u8]) -> IResult<&[u8], Self> {
+        // takeは指定したバイト数の任意の数値を受理する
+        // tagは指定したバイト列を受理する
+        // optは指定したパース内容を0個以上1個以下受理する
+        // inputが残りの入力を指すスライス、idmなどその次が受理した数値の位置を指すスライス
+        let (input, _) = take(1usize)(data)?; // フレーム長さ
+        let (input, _) = tag(b"\x09")(input)?; // Writeレスポンスコード
+        let (input, idm) = take(IDM_LENGTH)(input)?; // IDm
+        let (input, _) = tag(b"\x00")(input)?; // ステータフラグ1 0x00以外はエラー
+        let (input, _) = take(1usize)(input)?; // ステータフラグ2
+        Ok((input, Self { idm }))
+    }
+}
